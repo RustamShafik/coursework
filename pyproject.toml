@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "coursework"
+version = "0.1.0"
+description = ""
+authors = ["Rustam Shafikov <mitaleko@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# Конфигурация Black
+[tool.black]
+line-length = 119
+exclude = '''
+/(
+    \.git
+)/
+'''
+
+# Конфигурация isort
+[tool.isort]
+line_length = 119
+profile = "black"
+
+# Конфигурация mypy
+[tool.mypy]
+disallow_untyped_defs = true
+warn_return_any = true
+exclude = ['venv']
+
+# Конфигурация flake8
+[tool.flake8]
+max-line-length = 119
+exclude = ".git,__pycache__"
