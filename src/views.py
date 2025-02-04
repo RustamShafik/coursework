@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 import datetime
 
@@ -68,20 +69,59 @@ def get_greeting():
         return "Доброй ночи"
 
 
+def calculate_card_data(df):
+    """
+    Рассчитывает данные по картам: общую сумму расходов (по "Сумма платежа") и кешбэк.
 
-file_path = '../operations.xlsx'
+    Аргументы:
+    df (pandas.DataFrame): Данные о транзакциях.
 
-# Получаем и выводим приветствие
-greeting = get_greeting()
-print(greeting)
+    Возвращает:
+    list: Список словарей с данными по картам.
+    """
+    # Фильтруем строки, где есть номер карты и статус OK
+    df_filtered = df[df['Номер карты'].notnull() & (df['Статус'] == 'OK')]
 
-# Загружаем данные из файла и выводим их
-operations_data = load_operations_data(file_path)
-target_date = pd.to_datetime('2021-12-15')
+    card_data = []
+    for card, group in df_filtered.groupby('Номер карты'):
+        # Суммируем только отрицательные значения в "Сумма платежа"
+        total_spent = group[group['Сумма платежа'] < 0]['Сумма платежа'].sum()
 
-# Фильтруем данные по дате
-filtered_data = filter_data_by_date(operations_data, target_date)
+        # Если total_spent отрицательный, делаем его положительным
+        total_spent = abs(total_spent)
 
-# Выводим отфильтрованные данные
-print(filtered_data)
+        # Рассчитываем кешбэк (по положительной сумме расходов)
+        cashback = total_spent // 100
+        cashback = max(cashback, 0)  # Если кешбэк отрицательный, устанавливаем его в 0
+
+        # Составляем список расходов
+        expenses = group[group['Сумма платежа'] < 0]['Сумма платежа'].apply(lambda x: f"Сумма платежа: {abs(x)} RUB").tolist()
+
+        card_data.append({
+            'last_digits': card[-4:],  # Последние 4 цифры карты
+            'total_spent': round(total_spent, 2),
+            'cashback': round(cashback, 2),
+            'expenses': expenses  # Список расходов
+        })
+
+    return card_data
+
+
+file_path = '../operations.xlsx'  # Путь к вашему файлу
+df = load_operations_data(file_path)
+
+# Установим целевую дату
+target_date = datetime.datetime(2021, 12, 20)
+
+# Отфильтруем данные по дате
+filtered_df = filter_data_by_date(df, target_date)
+
+filtered_df.to_excel('filtered_operations.xlsx', index=False)
+
+card_data = calculate_card_data(filtered_df)
+json_output = json.dumps(card_data, ensure_ascii=False, indent=4)
+
+# Выводим результат
+print(json_output)
+
 
