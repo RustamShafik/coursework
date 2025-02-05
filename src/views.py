@@ -1,6 +1,9 @@
 import json
 import pandas as pd
 import datetime
+import requests
+import os
+from dotenv import load_dotenv
 
 def load_operations_data(file_path):
     """
@@ -84,44 +87,168 @@ def calculate_card_data(df):
 
     card_data = []
     for card, group in df_filtered.groupby('Номер карты'):
-        # Суммируем только отрицательные значения в "Сумма платежа"
-        total_spent = group[group['Сумма платежа'] < 0]['Сумма платежа'].sum()
+        # Суммируем только отрицательные значения в "Сумма операции"
+        total_spent = group[group['Сумма операции'] < 0]['Сумма операции'].sum()
 
         # Если total_spent отрицательный, делаем его положительным
         total_spent = abs(total_spent)
 
         # Рассчитываем кешбэк (по положительной сумме расходов)
-        cashback = total_spent // 100
+        cashback = total_spent / 100
         cashback = max(cashback, 0)  # Если кешбэк отрицательный, устанавливаем его в 0
-
-        # Составляем список расходов
-        expenses = group[group['Сумма платежа'] < 0]['Сумма платежа'].apply(lambda x: f"Сумма платежа: {abs(x)} RUB").tolist()
 
         card_data.append({
             'last_digits': card[-4:],  # Последние 4 цифры карты
             'total_spent': round(total_spent, 2),
             'cashback': round(cashback, 2),
-            'expenses': expenses  # Список расходов
         })
 
     return card_data
 
+def top_five_transact(df):
+    df_filtered = df[['Дата операции', 'Сумма операции', 'Категория', 'Описание']]
+    df_filtered = df_filtered.sort_values(by='Сумма операции', key=abs, ascending=False).head(5)
+    top_transact = []
+    for _, row in df_filtered.iterrows():
+        top_transact.append({
+            "date": row['Дата операции'].strftime("%d.%m.%Y"),  # Форматируем дату
+            "amount": round(row['Сумма операции'], 2),
+            "category": row['Категория'],
+            "description": row['Описание']
+        })
 
-file_path = '../operations.xlsx'  # Путь к вашему файлу
-df = load_operations_data(file_path)
+    return top_transact
 
-# Установим целевую дату
+# Загружаем переменные окружения из файла .env (если используете этот метод)
+load_dotenv()
+
+# Загружаем настройки пользователя
+with open('../user_settings.json') as f:
+    user_settings = json.load(f)
+
+# Получаем API-ключ из переменной окружения
+api_key = os.getenv('API_KEY')
+
+if not api_key:
+    raise ValueError("API-ключ не найден. Установите переменную среды API_KEY.")
+
+def get_currency_rates():
+    rates = []
+
+    # Обрабатываем каждую валюту из списка user_currencies
+    for currency in user_settings['user_currencies']:
+        try:
+            # Формируем URL для запроса к API
+            url = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base={currency}"
+
+            headers = {
+                "apikey": api_key
+            }
+
+            # Делаем запрос к API
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()  # Поднимет исключение для HTTP ошибок
+
+            # Если запрос успешен
+            data = response.json()
+
+            if 'rates' not in data:
+                return {"error": "Курсы не обнаружены в данных ответа"}
+
+            # Получаем курс для рубля относительно текущей базовой валюты
+            rate = data['rates'].get('RUB')
+            if rate:
+                rates.append({
+                    "currency": currency,
+                    "rate": rate
+                })
+        except requests.exceptions.HTTPError as http_err:
+            return {"error": f"HTTP error occurred: {http_err}"}
+        except requests.exceptions.RequestException as req_err:
+            return {"error": f"Request error occurred: {req_err}"}
+        except Exception as err:
+            return {"error": f"An error occurred: {err}"}
+
+    return {"currency_rates": rates}
+
+def get_stock_prices():
+    stock_prices = []
+    api_key = os.getenv("MARKETSTACK_API_KEY")  # Получаем API-ключ из переменной окружения
+
+    if not api_key:
+        print("Ошибка: API-ключ не найден. Проверьте .env файл.")
+        return {"error": "API key is missing"}
+
+    for stock in user_settings['user_stocks']:
+        try:
+            # Формируем URL с тикером акции
+            url = f"https://api.marketstack.com/v1/eod?access_key={api_key}&symbols={stock}"
+
+            # Делаем запрос к API
+            response = requests.get(url)
+            response.raise_for_status()  # Проверяем ошибки HTTP
+
+            # Получаем JSON-ответ
+            data = response.json()
+
+            # Проверяем, есть ли данные о цене
+            if "data" not in data or not data["data"]:
+                print(f"Ошибка: нет данных для {stock}")
+                continue
+
+            # Получаем последнюю цену закрытия акции
+            price = data["data"][0]["close"]
+
+            stock_prices.append({
+                "stock": stock,
+                "price": price
+            })
+
+        except requests.exceptions.HTTPError as http_err:
+            print(f"HTTP error for {stock}: {http_err}")
+        except requests.exceptions.RequestException as req_err:
+            print(f"Request error for {stock}: {req_err}")
+        except Exception as err:
+            print(f"An error occurred for {stock}: {err}")
+
+    return {"stock_prices": stock_prices}
+
+def get_dashboard_data(target_date):
+    """
+    Собирает данные для главной страницы дашборда.
+
+    Аргументы:
+    target_date (datetime): Целевая дата для фильтрации транзакций.
+
+    Возвращает:
+    dict: JSON-структура с данными для дашборда.
+    """
+    # Загружаем данные
+    file_path = '../operations.xlsx'
+    df = load_operations_data(file_path)
+
+    # Фильтруем по дате
+    filtered_df = filter_data_by_date(df, target_date)
+
+    # Формируем JSON
+    dashboard_data = {
+        "greeting": get_greeting(),
+        "cards": calculate_card_data(filtered_df),
+        "top_transactions": top_five_transact(filtered_df),
+        "currency_rates": get_currency_rates().get("currency_rates", []),
+        "stock_prices": get_stock_prices().get("stock_prices", [])
+    }
+
+    return dashboard_data
+
+
+import datetime
 target_date = datetime.datetime(2021, 12, 20)
+dashboard = get_dashboard_data(target_date)
+print(json.dumps(dashboard, ensure_ascii=False, indent=4))
 
-# Отфильтруем данные по дате
-filtered_df = filter_data_by_date(df, target_date)
 
-filtered_df.to_excel('filtered_operations.xlsx', index=False)
 
-card_data = calculate_card_data(filtered_df)
-json_output = json.dumps(card_data, ensure_ascii=False, indent=4)
 
-# Выводим результат
-print(json_output)
 
 
