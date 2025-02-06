@@ -242,10 +242,16 @@ def get_dashboard_data(target_date):
     return dashboard_data
 
 
-import datetime
-target_date = datetime.datetime(2021, 12, 20)
-dashboard = get_dashboard_data(target_date)
-print(json.dumps(dashboard, ensure_ascii=False, indent=4))
+# import datetime
+# target_date = datetime.datetime(2021, 12, 20)
+# dashboard = get_dashboard_data(target_date)
+# print(json.dumps(dashboard, ensure_ascii=False, indent=4))
+
+if __name__ == "__main__":
+    import datetime
+    target_date = datetime.datetime(2021, 12, 20)
+    dashboard = get_dashboard_data(target_date)
+    print(json.dumps(dashboard, ensure_ascii=False, indent=4))
 
 
 
