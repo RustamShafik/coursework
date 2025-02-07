@@ -1,5 +1,6 @@
 import json
 
+
 def search_transactions(df, query):
     """
     Ищет транзакции, содержащие запрос в описании или категории.

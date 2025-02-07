@@ -1,9 +1,11 @@
-import json
-import pandas as pd
 import datetime
-import requests
+import json
 import os
+
+import pandas as pd
+import requests
 from dotenv import load_dotenv
+
 
 def load_operations_data(file_path):
     """
@@ -35,6 +37,7 @@ def load_operations_data(file_path):
     # print (df.head())
     return df
 
+
 def filter_data_by_date(df, target_date):
     """
         Фильтрует данные о транзакциях по диапазону дат:
@@ -52,6 +55,7 @@ def filter_data_by_date(df, target_date):
     # Фильтруем данные, чтобы оставить только транзакции с 1-го числа месяца до целевой даты
     filtered_data = df[(df['Дата операции'] >= first_of_month) & (df['Дата операции'] <= target_date)]
     return filtered_data
+
 
 def get_greeting():
     """
@@ -105,6 +109,7 @@ def calculate_card_data(df):
 
     return card_data
 
+
 def top_five_transact(df):
     df_filtered = df[['Дата операции', 'Сумма операции', 'Категория', 'Описание']]
     df_filtered = df_filtered.sort_values(by='Сумма операции', key=abs, ascending=False).head(5)
@@ -119,11 +124,12 @@ def top_five_transact(df):
 
     return top_transact
 
+
 # Загружаем переменные окружения из файла .env (если используете этот метод)
 load_dotenv()
 
 # Загружаем настройки пользователя
-with open('../user_settings.json') as f:
+with open('user_settings.json') as f:
     user_settings = json.load(f)
 
 # Получаем API-ключ из переменной окружения
@@ -131,6 +137,7 @@ api_key = os.getenv('API_KEY')
 
 if not api_key:
     raise ValueError("API-ключ не найден. Установите переменную среды API_KEY.")
+
 
 def get_currency_rates():
     rates = []
@@ -170,6 +177,7 @@ def get_currency_rates():
             return {"error": f"An error occurred: {err}"}
 
     return {"currency_rates": rates}
+
 
 def get_stock_prices():
     stock_prices = []
@@ -213,6 +221,7 @@ def get_stock_prices():
 
     return {"stock_prices": stock_prices}
 
+
 def get_dashboard_data(target_date):
     """
     Собирает данные для главной страницы дашборда.
@@ -248,13 +257,6 @@ def get_dashboard_data(target_date):
 # print(json.dumps(dashboard, ensure_ascii=False, indent=4))
 
 if __name__ == "__main__":
-    import datetime
     target_date = datetime.datetime(2021, 12, 20)
     dashboard = get_dashboard_data(target_date)
     print(json.dumps(dashboard, ensure_ascii=False, indent=4))
-
-
-
-
-
-
