@@ -1,7 +1,7 @@
 import datetime
 import json
 import os
-
+from src.utils import logger
 import pandas as pd
 import requests
 from dotenv import load_dotenv
@@ -33,7 +33,7 @@ def load_operations_data(file_path):
     df['Бонусы (включая кэшбэк)'] = pd.to_numeric(df['Бонусы (включая кэшбэк)'], errors='coerce')
     df['Округление на инвесткопилку'] = pd.to_numeric(df['Округление на инвесткопилку'], errors='coerce')
     df['Сумма операции с округлением'] = pd.to_numeric(df['Сумма операции с округлением'], errors='coerce')
-
+    logger.info(f"Данные из файла {file_path} успешно загружены.")
     # print (df.head())
     return df
 
@@ -223,15 +223,12 @@ def get_stock_prices():
 
 
 def get_dashboard_data(target_date):
-    """
-    Собирает данные для главной страницы дашборда.
+    if isinstance(target_date, str):
+        try:
+            target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            raise ValueError("Неверный формат даты. Используйте формат 'YYYY-MM-DD HH:MM:SS'.")
 
-    Аргументы:
-    target_date (datetime): Целевая дата для фильтрации транзакций.
-
-    Возвращает:
-    dict: JSON-структура с данными для дашборда.
-    """
     # Загружаем данные
     file_path = '../operations.xlsx'
     df = load_operations_data(file_path)
@@ -257,6 +254,7 @@ def get_dashboard_data(target_date):
 # print(json.dumps(dashboard, ensure_ascii=False, indent=4))
 
 if __name__ == "__main__":
-    target_date = datetime.datetime(2021, 12, 20)
+    # target_date = datetime.datetime(2021, 12, 20)
+    target_date = ("2021-12-20 17:00:00")
     dashboard = get_dashboard_data(target_date)
     print(json.dumps(dashboard, ensure_ascii=False, indent=4))
