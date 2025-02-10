@@ -230,7 +230,8 @@ def get_dashboard_data(target_date):
             raise ValueError("Неверный формат даты. Используйте формат 'YYYY-MM-DD HH:MM:SS'.")
 
     # Загружаем данные
-    file_path = '../operations.xlsx'
+    # file_path = '../operations.xlsx'
+    file_path = os.path.join(os.path.dirname(__file__), '../operations.xlsx')
     df = load_operations_data(file_path)
 
     # Фильтруем по дате
