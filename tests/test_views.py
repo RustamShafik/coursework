@@ -1,17 +1,17 @@
-import datetime
-from io import StringIO
 import pandas as pd
 import pytest
 from unittest.mock import patch
 from src.views import (
-    load_operations_data,
-    top_five_transact,
     filter_data_by_date,
     calculate_card_data,
     get_currency_rates,
     get_stock_prices,
-    get_dashboard_data,
-    get_greeting
+    get_dashboard_data
+)
+
+from src.views import (
+    top_five_transact,
+
 )
 
 
@@ -25,17 +25,20 @@ def mock_excel_data():
         "Категория": ["Продукты", "Кафе"]
     })
 
+
 # Тестирование функции filter_data_by_date с пустым DataFrame
 def test_filter_data_by_date_empty():
     df = pd.DataFrame(columns=["Дата операции", "Сумма операции"])
     result = filter_data_by_date(df, pd.Timestamp("2024-01-15"))
     assert result.empty
 
+
 # Тестирование функции calculate_card_data с пустыми данными
 def test_calculate_card_data_empty():
     df = pd.DataFrame(columns=["Номер карты", "Сумма операции", "Статус"])
     result = calculate_card_data(df)
     assert result == []  # Ожидаем пустой список
+
 
 # Тестирование функции filter_data_by_date
 def test_filter_data_by_date():
@@ -148,6 +151,8 @@ def test_get_dashboard_data(mock_greeting, mock_top_transact, mock_card_data, mo
     assert result["stock_prices"][0]["price"] == 150.0
 
 # Тестирование функции get_currency_rates с пустым ответом от API
+
+
 @patch("requests.get")
 def test_get_currency_rates_empty(mock_get):
     mock_get.return_value.json.return_value = {"rates": {}}
@@ -167,20 +172,6 @@ def test_get_stock_prices_empty(mock_get):
     assert len(result["stock_prices"]) == 0  # Ожидаем пустой список
 
 
-from io import StringIO
-import pandas as pd
-import pytest
-from unittest.mock import patch
-from src.views import (
-    load_operations_data,
-    filter_data_by_date,
-    calculate_card_data,
-    get_currency_rates,
-    get_stock_prices,
-    get_dashboard_data,
-    get_greeting
-)
-
 def test_top_five_transact_less_than_five():
     df = pd.DataFrame({
         "Дата операции": pd.to_datetime(["2024-01-01", "2024-01-05"]),
@@ -190,8 +181,3 @@ def test_top_five_transact_less_than_five():
     })
     result = top_five_transact(df)
     assert len(result) == 2  # Ожидаем 2 транзакции, так как их меньше 5
-
-
-
-
-
