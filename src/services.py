@@ -1,4 +1,13 @@
 import json
+import logging
+
+# Настройка логгера для записи в файл app.search.log
+logging.basicConfig(
+    filename='app.search.log',  # Логи будут записываться в файл app.search.log
+    level=logging.INFO,  # Уровень логирования
+    format='%(asctime)s - %(levelname)s - %(message)s'  # Формат лог-сообщений
+)
+
 
 def search_transactions(df, query):
     """
@@ -11,6 +20,9 @@ def search_transactions(df, query):
     Возвращает:
     str: JSON-ответ со списком найденных транзакций.
     """
+    # Логгируем начало поиска
+    logging.info(f"Начинаем поиск транзакций по запросу: {query}")
+
     query = query.lower()  # Приводим запрос к нижнему регистру
 
     # Приводим столбцы "Описание" и "Категория" к строковому типу и удаляем лишние пробелы
@@ -27,5 +39,20 @@ def search_transactions(df, query):
         df.to_dict(orient="records")
     )
 
-    # Преобразуем результат в JSON
-    return json.dumps(list(filtered_transactions), ensure_ascii=False, indent=4)
+    filtered_transactions_list = list(filtered_transactions)
+
+    # Логгируем количество найденных транзакций
+    logging.info(f"Найдено {len(filtered_transactions_list)} транзакций по запросу '{query}'.")
+
+    # Если транзакции не найдены, записываем предупреждение
+    if len(filtered_transactions_list) == 0:
+        logging.warning(f"По запросу '{query}' не найдено ни одной транзакции.")
+
+    # Преобразуем результат в JSON и возвращаем
+    result = json.dumps(filtered_transactions_list, ensure_ascii=False,
+                        indent=4) if filtered_transactions_list else '[]'
+
+    # Логгируем результат, который возвращается
+    logging.info(f"Результат поиска: {result}")
+
+    return result
