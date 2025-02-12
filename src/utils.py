@@ -5,6 +5,8 @@ import pandas as pd
 
 
 # Конфигурация логгера
+
+
 def setup_logger():
     logger = logging.getLogger('financial_dashboard')
     logger.setLevel(logging.INFO)
@@ -21,6 +23,7 @@ def setup_logger():
     logger.addHandler(file_handler)
 
     return logger
+
 
 # Получаем логгер
 logger = setup_logger()

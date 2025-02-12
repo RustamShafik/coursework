@@ -1,4 +1,3 @@
-import sys
 import pandas as pd
 import pytest
 
@@ -14,9 +13,11 @@ def sample_transactions():
     }
     return pd.DataFrame(data)
 
+
 def test_search_transactions_found(sample_transactions):
     result = search_transactions(sample_transactions, "супермаркеты")
     assert '"Описание": "Супермаркеты"' in result
+
 
 def test_search_transactions_not_found(sample_transactions):
     result = search_transactions(sample_transactions, "аптека")
