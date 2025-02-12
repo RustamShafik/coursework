@@ -2,7 +2,7 @@ import pandas as pd
 
 from src.reports import spending_by_category
 from src.services import search_transactions
-from src.views import load_operations_data
+from src.utils import load_operations_data
 
 file_path = 'operations.xlsx'
 df = load_operations_data(file_path)

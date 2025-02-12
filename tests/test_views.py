@@ -4,15 +4,11 @@ import pandas as pd
 import pytest
 from unittest.mock import patch
 from src.views import (
-    load_operations_data,
-    top_five_transact,
-    filter_data_by_date,
-    calculate_card_data,
     get_currency_rates,
     get_stock_prices,
-    get_dashboard_data,
-    get_greeting
+    get_dashboard_data
 )
+from src.utils import load_operations_data, filter_data_by_date, get_greeting, calculate_card_data, top_five_transact
 
 
 # Тестирование функции load_operations_data с Mock
